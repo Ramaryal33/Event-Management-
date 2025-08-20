@@ -1,0 +1,118 @@
+﻿services:
+  env-dashboard:
+    image: "mcr.microsoft.com/dotnet/nightly/aspire-dashboard:latest"
+    expose:
+      - "18888"
+      - "18889"
+    networks:
+      - "aspire"
+    restart: "always"
+
+  cache:
+    image: "docker.io/library/redis:7.4"
+    command:
+      - "-c"
+      - "redis-server --requirepass $$REDIS_PASSWORD"
+    entrypoint:
+      - "/bin/sh"
+    environment:
+      REDIS_PASSWORD: "${CACHE_PASSWORD}"
+    expose:
+      - "6379"
+    networks:
+      - "aspire"
+
+  postgres:
+    image: "docker.io/library/postgres:17.5"
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256"
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    expose:
+      - "5432"
+    volumes:
+      - type: "volume"
+        target: "/var/lib/postgresql/data"
+        source: "eventing.apphost-dbf96d0eb1-postgres-data"
+        read_only: false
+    networks:
+      - "aspire"
+
+  pgadmin:
+    image: dpage/pgadmin4:8.13
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@example.com"   # ✅ Valid email
+      PGADMIN_DEFAULT_PASSWORD: "StrongPassword123!"
+    ports:
+      - "5050:80"   # Access pgAdmin at http://localhost:5050
+    depends_on:
+      postgres:
+        condition: service_started
+    networks:
+      - "aspire"
+
+  mailpit:
+    image: "docker.io/axllent/mailpit:v1.22.3"
+    expose:
+      - "1025"
+      - "8025"
+    networks:
+      - "aspire"
+
+  apiservice:
+    image: "${APISERVICE_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${APISERVICE_PORT}"
+      ConnectionStrings__eventing-db: "Host=postgres;Port=5432;Username=postgres;Password=${POSTGRES_PASSWORD};Database=eventing-db"
+      ConnectionStrings__cache: "cache:6379,password=${CACHE_PASSWORD}"
+      ConnectionStrings__mailpit: "Endpoint=smtp://mailpit:1025"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "apiservice"
+    expose:
+      - "${APISERVICE_PORT}"
+    depends_on:
+      postgres:
+        condition: "service_started"
+      cache:
+        condition: "service_started"
+      mailpit:
+        condition: "service_started"
+    networks:
+      - "aspire"
+
+  webfrontend:
+    image: "${WEBFRONTEND_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES: "true"
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${WEBFRONTEND_PORT}"
+      ConnectionStrings__cache: "cache:6379,password=${CACHE_PASSWORD}"
+      services__apiservice__http__0: "http://apiservice:${APISERVICE_PORT}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://env-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "webfrontend"
+    ports:
+      - "${WEBFRONTEND_PORT}"
+    depends_on:
+      cache:
+        condition: "service_started"
+      apiservice:
+        condition: "service_started"
+    networks:
+      - "aspire"
+
+networks:
+  aspire:
+    driver: "bridge"
+
+volumes:
+  eventing.apphost-dbf96d0eb1-postgres-data:
+    driver: "local"

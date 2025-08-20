@@ -1,0 +1,40 @@
+﻿@inherits LayoutComponentBase
+@layout ParentLayout
+
+<FluentLayout Style="min-height:100vh; display:flex; flex-direction:column;">
+
+    <!-- Header -->
+    <FluentHeader Style="background:#111; color:white; padding:1rem; font-size:1.5rem; font-weight:bold;">
+        Evento
+        <FluentSpacer />
+        <FluentButton Href="/" Appearance="Appearance.Stealth" Icon="home-24-regular">Home</FluentButton>
+        <FluentButton Href="/events" Appearance="Appearance.Stealth" Icon="calendar-24-regular">Events</FluentButton>
+        <FluentButton Href="/about" Appearance="Appearance.Stealth" Icon="info-24-regular">About</FluentButton>
+        <FluentButton Href="/contact" Appearance="Appearance.Stealth" Icon="call-24-regular">Contact</FluentButton>
+    </FluentHeader>
+
+    <!-- Body -->
+    <FluentBodyContent Style="flex:1; padding:1.5rem;">
+        @Body
+    </FluentBodyContent>
+
+    <!-- Footer -->
+    <FluentFooter Style="background:#111; color:white; padding:1rem; text-align:center;">
+        <span>© 2025 Evento. All rights reserved.</span>
+        <FluentSpacer />
+        <FluentButton Appearance="Appearance.Stealth" Icon="globe-24-regular" Href="https://www.fluentui-blazor.net" Target="_blank">
+            Docs
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Stealth" Icon="info-24-regular" Href="https://learn.microsoft.com/en-us/aspnet/core/blazor" Target="_blank">
+            About Blazor
+        </FluentButton>
+    </FluentFooter>
+
+</FluentLayout>
+
+<!-- Error UI -->
+<div id="blazor-error-ui" style="background:#ff0040; color:white; padding:0.75rem; display:none;">
+    An unhandled error has occurred.
+    <a href="." style="color:white; text-decoration:underline;">Reload</a>
+    <span class="dismiss" style="margin-left:1rem; cursor:pointer;">🗙</span>
+</div>

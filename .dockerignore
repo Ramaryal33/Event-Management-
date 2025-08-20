@@ -1,0 +1,30 @@
+# Build artifacts
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.swp
+*.lock
+*.log
+
+# Visual Studio files
+.vs/
+*.vcxproj.user
+
+# Rider / JetBrains
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Node (if you have frontend assets)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Docker
+Dockerfile
+docker-compose*
